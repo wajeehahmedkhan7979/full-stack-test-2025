@@ -1,0 +1,62 @@
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id        String    @id
+  email     String    @unique
+  chats     Chat[]
+  messages  Message[]
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@map("users")
+}
+
+model Chat {
+  id        String    @id @default(cuid())
+  title     String    @default("New Chat")
+  userId    String    @map("user_id")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  Message[]
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@map("chats")
+}
+
+model Message {
+  id        String        @id @default(cuid())
+  chatId    String        @map("chat_id")
+  userId    String        @map("user_id")
+  role      MessageRole
+  content   String
+  status    MessageStatus @default(SENT)
+
+  chat      Chat          @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  user      User          @relation(fields: [userId], references: [id])
+
+  createdAt DateTime      @default(now()) @map("created_at")
+
+  @@index([chatId])
+  @@index([userId])
+  @@map("messages")
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+}
+
+enum MessageStatus {
+  PENDING
+  SENT
+  FAILED
+}
